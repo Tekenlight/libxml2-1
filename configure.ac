@@ -29,6 +29,14 @@ if test -d .git ; then
   fi
 fi
 
+AC_SUBST(oldincludedir, "$oldincludedir/lua_schema")
+AC_SUBST(includedir, "$includedir/lua_schema")
+AC_SUBST(libdir, "$libdir/lua_schema")
+AC_SUBST(bindir, "$bindir/lua_schema")
+AC_SUBST(mandir, "$mandir/lua_schema")
+AC_SUBST(docdir, "$docdir/lua_schema")
+AC_SUBST(htmldir, "$htmldir/lua_schema")
+
 AC_SUBST(LIBXML_MAJOR_VERSION)
 AC_SUBST(LIBXML_MINOR_VERSION)
 AC_SUBST(LIBXML_MICRO_VERSION)
@@ -1116,7 +1124,7 @@ else
 fi
 
 XML_LIBS="-lxml2"
-XML_LIBTOOLLIBS="libxml2.la"
+XML_LIBTOOLLIBS="libxml2.la libxcml2.la"
 XML_PRIVATE_LIBS="$Z_LIBS $LZMA_LIBS $THREAD_LIBS $ICONV_LIBS $ICU_LIBS $LIBM $NET_LIBS"
 XML_PRIVATE_CFLAGS="$Z_CFLAGS $LZMA_CFLAGS $THREAD_CFLAGS $ICONV_CFLAGS $ICU_CFLAGS"
 

@@ -1573,7 +1573,7 @@ _xmlSchemaBase64Decode (const xmlChar ch) {
  * Returns 0 if this validates, a positive error code number otherwise
  *         and -1 in case of internal or API error.
  */
-static int
+int
 xmlSchemaValidateDates (xmlSchemaValType type,
 	                const xmlChar *dateTime, xmlSchemaValPtr *val,
 			int collapse) {
@@ -1796,7 +1796,7 @@ error:
  * Returns 0 if this validates, a positive error code number otherwise
  *         and -1 in case of internal or API error.
  */
-static int
+int
 xmlSchemaValidateDuration (xmlSchemaTypePtr type ATTRIBUTE_UNUSED,
 	                   const xmlChar *duration, xmlSchemaValPtr *val,
 			   int collapse) {
@@ -4120,7 +4120,7 @@ _xmlSchemaDateCastYMToDays (const xmlSchemaValPtr dt)
  * Returns -1 if x < y, 0 if x == y, 1 if x > y, 2 if x <> y, and -2 in
  * case of error
  */
-static int
+int
 xmlSchemaCompareDates (xmlSchemaValPtr x, xmlSchemaValPtr y)
 {
     unsigned char xmask, ymask, xor_mask, and_mask;

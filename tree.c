@@ -1693,6 +1693,41 @@ out:
 }
 
 /**
+ * xmlIsLeafNode:
+ * @doc:  the document
+ * @node: a Node 
+ *
+ * Returns if the node is a leaf node (1) branch node (0)
+ */
+int xmlIsLeafNode(xmlDocPtr doc, const xmlNode *node)
+{
+    xmlNode *child = NULL;
+    xmlChar *ret = NULL;
+    xmlEntityPtr ent;
+    int attr;
+
+    if (node == NULL)
+        return 0;
+
+    if (node->type != XML_ELEMENT_NODE)
+        return 0;
+
+    child = node->children;
+    while (child != NULL) {
+		switch (child->type) {
+			case XML_TEXT_NODE:
+			case XML_CDATA_SECTION_NODE:
+			case XML_ENTITY_REF_NODE:
+				break;
+			default:
+				return 0;
+		}
+        child = child->next;
+    }
+    return 1;
+}
+
+/**
  * xmlNodeListGetString:
  * @doc:  the document
  * @list:  a Node list

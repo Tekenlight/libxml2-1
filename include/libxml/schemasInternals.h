@@ -143,6 +143,16 @@ typedef struct _xmlSchemaFacet xmlSchemaFacet;
 typedef xmlSchemaFacet *xmlSchemaFacetPtr;
 
 /**
+ * Qualified name
+ */
+typedef struct _xmlSchemaQName xmlSchemaQName;
+typedef xmlSchemaQName *xmlSchemaQnamePtr;
+struct _xmlSchemaQName {
+	xmlChar* ns;
+	xmlChar* name;
+};
+
+/**
  * Annotation
  */
 typedef struct _xmlSchemaAnnot xmlSchemaAnnot;

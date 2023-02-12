@@ -238,6 +238,59 @@ XMLPUBFUN void
 					 xmlSchemaValidityLocatorFunc f,
 					 void *ctxt);
 
+/*
+ * Interface for accessing components of pased schema
+ */
+typedef struct _xmlSchemaType xmlSchemaType;
+typedef xmlSchemaType *xmlSchemaTypePtr;
+
+XMLPUBFUN xmlSchemaTypePtr
+xmlSchemaGetType(xmlSchemaPtr schema, const xmlChar * name,
+                 const xmlChar * nsName);
+
+typedef struct _xmlSchemaElement xmlSchemaElement;
+typedef xmlSchemaElement *xmlSchemaElementPtr;
+
+XMLPUBFUN xmlSchemaElementPtr
+xmlSchemaGetElem(xmlSchemaPtr schema, const xmlChar * name,
+                 const xmlChar * nsName);
+
+XMLPUBFUN xmlSchemaElementPtr*
+xmlSchemaGetGlobalElements(xmlSchemaPtr schema);
+
+XMLPUBFUN xmlSchemaTypePtr
+xmlSchemaGetType(xmlSchemaPtr schema, const xmlChar * name,
+                 const xmlChar * nsName);
+
+XMLPUBFUN xmlSchemaTypePtr*
+xmlSchemaGetGlobalTypeDefs(xmlSchemaPtr schema);
+
+typedef struct _xmlSchemaModelGroupDef xmlSchemaModelGroupDef;
+typedef xmlSchemaModelGroupDef *xmlSchemaModelGroupDefPtr;
+
+XMLPUBFUN xmlSchemaModelGroupDefPtr
+xmlSchemaGetModelGroupDef(xmlSchemaPtr schema, const xmlChar * name,
+                 const xmlChar * nsName);
+
+XMLPUBFUN xmlSchemaModelGroupDefPtr*
+xmlSchemaGetGlobalModelGroupDefs(xmlSchemaPtr schema);
+
+/*
+ * For getting names of definitions/declarations in xsd
+ */
+
+typedef struct _xmlSchemaQName xmlSchemaQName;
+typedef xmlSchemaQName *xmlSchemaQnamePtr;
+
+XMLPUBFUN xmlSchemaQnamePtr
+xmlSchemaGetQNameOfProp(xmlSchemaParserCtxtPtr ctxt,
+						xmlSchemaPtr schema,
+						xmlNodePtr node,
+						const xmlChar * propName);
+
+XMLPUBFUN void
+xmlFreeSchemaQnamePtr(xmlSchemaQnamePtr ptr);
+
 #ifdef __cplusplus
 }
 #endif

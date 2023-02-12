@@ -144,6 +144,19 @@ XMLPUBFUN xmlSchemaValPtr
 XMLPUBFUN xmlSchemaValType
 		xmlSchemaGetValType		(xmlSchemaValPtr val);
 
+
+
+XMLPUBFUN int
+		xmlSchemaValidateDates	(xmlSchemaValType type,
+						const xmlChar *dateTime,
+						xmlSchemaValPtr *val, int collapse);
+XMLPUBFUN int
+xmlSchemaCompareDates (xmlSchemaValPtr x, xmlSchemaValPtr y);
+
+XMLPUBFUN int
+xmlSchemaValidateDuration(xmlSchemaTypePtr type,
+				   const xmlChar *duration, xmlSchemaValPtr *val, int collapse);
+
 #ifdef __cplusplus
 }
 #endif

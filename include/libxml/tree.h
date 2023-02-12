@@ -1053,6 +1053,10 @@ XMLPUBFUN xmlChar *
 		xmlNodeListGetString	(xmlDocPtr doc,
 					 const xmlNode *list,
 					 int inLine);
+XMLPUBFUN int XMLCALL
+		xmlIsLeafNode			(xmlDocPtr doc,
+					const xmlNode *node);
+
 #ifdef LIBXML_TREE_ENABLED
 XMLPUBFUN xmlChar *
 		xmlNodeListGetRawString	(const xmlDoc *doc,

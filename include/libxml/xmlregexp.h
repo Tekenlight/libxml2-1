@@ -57,6 +57,10 @@ XMLPUBFUN int
 XMLPUBFUN void
 		    xmlRegexpPrint	(FILE *output,
 					 xmlRegexpPtr regexp);
+
+XMLPUBFUN void
+	xmlRegexpPrintToStdOut(xmlRegexpPtr regexp);
+
 XMLPUBFUN int
 		    xmlRegexpIsDeterminist(xmlRegexpPtr comp);
 

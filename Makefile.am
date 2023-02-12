@@ -30,7 +30,7 @@ bin_PROGRAMS = xmllint xmlcatalog
 
 bin_SCRIPTS = xml2-config
 
-lib_LTLIBRARIES = libxml2.la
+lib_LTLIBRARIES = libxml2.la libcxml2.la
 libxml2_la_CFLAGS = $(AM_CFLAGS) $(XML_PRIVATE_CFLAGS)
 libxml2_la_LIBADD = $(XML_PRIVATE_LIBS)
 
@@ -110,6 +110,87 @@ libxml2_la_SOURCES += xpath.c
 endif
 if WITH_XPTR_SOURCES
 libxml2_la_SOURCES += xlink.c xpointer.c
+endif
+
+libcxml2_la_CFLAGS = $(AM_CFLAGS) $(XML_PRIVATE_CFLAGS)
+libcxml2_la_LIBADD = $(XML_PRIVATE_LIBS)
+
+libcxml2_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined \
+		     -version-info $(LIBXML_VERSION_INFO) \
+		     $(MODULE_PLATFORM_LIBS)
+if USE_VERSION_SCRIPT
+libcxml2_la_LDFLAGS += $(VERSION_SCRIPT_FLAGS)$(srcdir)/libxml2.syms
+endif
+
+libcxml2_la_SOURCES = buf.c chvalid.c dict.c entities.c encoding.c error.c \
+		     globals.c hash.c list.c parser.c parserInternals.c \
+		     SAX2.c threads.c tree.c uri.c valid.c xmlIO.c \
+		     xmlmemory.c xmlstring.c
+if WITH_C14N_SOURCES
+libcxml2_la_SOURCES += c14n.c
+endif
+if WITH_CATALOG_SOURCES
+libcxml2_la_SOURCES += catalog.c
+endif
+if WITH_DEBUG_SOURCES
+libcxml2_la_SOURCES += debugXML.c
+endif
+if WITH_FTP_SOURCES
+libcxml2_la_SOURCES += nanoftp.c
+endif
+if WITH_HTML_SOURCES
+libcxml2_la_SOURCES += HTMLparser.c HTMLtree.c
+endif
+if WITH_HTTP_SOURCES
+libcxml2_la_SOURCES += nanohttp.c
+endif
+if WITH_LEGACY_SOURCES
+libcxml2_la_SOURCES += legacy.c
+if WITH_SAX1_SOURCES
+libcxml2_la_SOURCES += SAX.c
+endif
+endif
+if WITH_LZMA_SOURCES
+libcxml2_la_SOURCES += xzlib.c
+endif
+if WITH_MODULES_SOURCES
+libcxml2_la_SOURCES += xmlmodule.c
+endif
+if WITH_OUTPUT_SOURCES
+libcxml2_la_SOURCES += xmlsave.c
+endif
+if WITH_PATTERN_SOURCES
+libcxml2_la_SOURCES += pattern.c
+endif
+if WITH_READER_SOURCES
+libcxml2_la_SOURCES += xmlreader.c
+endif
+if WITH_REGEXPS_SOURCES
+libcxml2_la_SOURCES += xmlregexp.c xmlunicode.c
+endif
+if WITH_SCHEMAS_SOURCES
+libcxml2_la_SOURCES += relaxng.c xmlschemas.c xmlschemastypes.c
+if !WITH_XPATH_SOURCES
+libcxml2_la_SOURCES += xpath.c
+endif
+endif
+if WITH_SCHEMATRON_SOURCES
+libcxml2_la_SOURCES += schematron.c
+endif
+if WITH_TRIO_SOURCES
+libcxml2_la_SOURCES += triostr.c trio.c
+endif
+if WITH_WRITER_SOURCES
+libcxml2_la_SOURCES += xmlwriter.c
+endif
+if WITH_XINCLUDE_SOURCES
+libcxml2_la_SOURCES += xinclude.c
+endif
+if WITH_XPATH_SOURCES
+libcxml2_la_SOURCES += xpath.c
+endif
+if WITH_XPTR_SOURCES
+libcxml2_la_SOURCES += xlink.c xpointer.c
 endif
 
 DEPS = $(top_builddir)/libxml2.la
