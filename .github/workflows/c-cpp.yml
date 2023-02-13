@@ -22,5 +22,4 @@ jobs:
     - name: make check
       run: make check
     - name: make distcheck
-      # run: make distcheck
-      run: echo "AVOIDING DISTCHECK FOR NOW"
+      run: make distcheck
