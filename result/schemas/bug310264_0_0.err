@@ -1,0 +1,1 @@
+./test/schemas/bug310264_0.xsd:8: element complexType: Schemas parser error : complex type 'c': The content model is not determinist.

@@ -13977,7 +13977,7 @@ xmlSchemaBuildContentModel(xmlSchemaTypePtr type,
 		//
 		// Build the automaton.
 		//
-		xmlSchemaBuildAContentModel(ctxt, WXS_TYPE_PARTICLE(type), 0);
+		xmlSchemaBuildAContentModel(ctxt, WXS_TYPE_PARTICLE(type), 1);
 		xmlAutomataSetFinalState(ctxt->am, ctxt->state);
 		contModel = xmlAutomataCompile(ctxt->am);
 		if (contModel == NULL) {

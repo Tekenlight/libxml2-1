@@ -1,0 +1,1 @@
+/test/schemas/579746_1.xsd:4: element complexType: Schemas parser error : complex type 'ContactType': The content model is not determinist.
