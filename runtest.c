@@ -3545,6 +3545,7 @@ schemasTest(const char *filename,
 		res = ret;
 	}
         if (compareFileMem(err, testErrors, testErrorsSize)) {
+			fprintf(stderr, "[%s]\n", testErrors);
             fprintf(stderr, "Error for %s on %s failed\n", instance,
                     filename);
             res = 1;
