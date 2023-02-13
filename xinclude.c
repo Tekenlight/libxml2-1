@@ -96,13 +96,16 @@ struct _xmlXIncludeCtxt {
     xmlXIncludeDoc    *urlTab; /* document stack */
 
     int              nbErrors; /* the number of errors detected */
+    int              fatalErr; /* abort processing */
     int                legacy; /* using XINCLUDE_OLD_NS */
     int            parseFlags; /* the flags used for parsing XML documents */
     xmlChar *		 base; /* the current xml:base */
 
     void            *_private; /* application data */
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     unsigned long    incTotal; /* total number of processed inclusions */
+#endif
     int			depth; /* recursion depth */
     int		     isStream; /* streaming mode */
 };
@@ -272,14 +275,18 @@ xmlXIncludeNewRef(xmlXIncludeCtxtPtr ctxt, const xmlChar *URI,
 	}
     }
     if (ctxt->incNr >= ctxt->incMax) {
-	ctxt->incMax *= 2;
-        ctxt->incTab = (xmlXIncludeRefPtr *) xmlRealloc(ctxt->incTab,
-	             ctxt->incMax * sizeof(ctxt->incTab[0]));
-        if (ctxt->incTab == NULL) {
+        xmlXIncludeRefPtr *tmp;
+        size_t newSize = ctxt->incMax * 2;
+
+        tmp = (xmlXIncludeRefPtr *) xmlRealloc(ctxt->incTab,
+	             newSize * sizeof(ctxt->incTab[0]));
+        if (tmp == NULL) {
 	    xmlXIncludeErrMemory(ctxt, elem, "growing XInclude context");
 	    xmlXIncludeFreeRef(ret);
 	    return(NULL);
 	}
+        ctxt->incTab = tmp;
+        ctxt->incMax *= 2;
     }
     ctxt->incTab[ctxt->incNr++] = ret;
     return(ret);
@@ -1728,6 +1735,12 @@ xmlXIncludeLoadTxt(xmlXIncludeCtxtPtr ctxt, const xmlChar *url,
 	xmlCharEncCloseFunc(buf->encoder);
     buf->encoder = xmlGetCharEncodingHandler(enc);
     node = xmlNewDocText(ctxt->doc, NULL);
+    if (node == NULL) {
+        xmlFreeInputStream(inputStream);
+        xmlFreeParserCtxt(pctxt);
+        xmlFree(URL);
+        return(-1);
+    }
 
     /*
      * Scan all chars from the resource and add the to the node
@@ -1855,11 +1868,25 @@ xmlXIncludeExpandNode(xmlXIncludeCtxtPtr ctxt, xmlNodePtr node) {
     xmlXIncludeRefPtr ref;
     int i;
 
+    if (ctxt->fatalErr)
+        return(NULL);
     if (ctxt->depth >= XINCLUDE_MAX_DEPTH) {
         xmlXIncludeErr(ctxt, node, XML_XINCLUDE_RECURSION,
                        "maximum recursion depth exceeded\n", NULL);
+        ctxt->fatalErr = 1;
         return(NULL);
     }
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    /*
+     * The XInclude engine offers no protection against exponential
+     * expansion attacks similar to "billion laughs". Avoid timeouts by
+     * limiting the total number of replacements when fuzzing.
+     */
+    if (ctxt->incTotal >= 20)
+        return(NULL);
+    ctxt->incTotal++;
+#endif
 
     for (i = 0; i < ctxt->incNr; i++) {
         if (ctxt->incTab[i]->elem == node) {
@@ -2243,15 +2270,6 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
     do {
 	/* TODO: need to work on entities -> stack */
         if (xmlXIncludeTestNode(ctxt, cur) == 1) {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-            /*
-             * Avoid superlinear expansion by limiting the total number
-             * of replacements.
-             */
-            if (ctxt->incTotal >= 20)
-                break;
-#endif
-            ctxt->incTotal++;
             ref = xmlXIncludeExpandNode(ctxt, cur);
             /*
              * Mark direct includes.
