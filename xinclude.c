@@ -591,6 +591,7 @@ xmlXIncludeAddNode(xmlXIncludeCtxtPtr ctxt, xmlNodePtr cur) {
     ref = xmlXIncludeNewRef(ctxt, URL, cur);
     xmlFree(URL);
     if (ref == NULL) {
+        xmlFree(fragment);
 	return(NULL);
     }
     ref->fragment = fragment;
@@ -1358,6 +1359,7 @@ xmlXIncludeLoadDoc(xmlXIncludeCtxtPtr ctxt, const xmlChar *url,
         if (tmp == NULL) {
             xmlXIncludeErrMemory(ctxt, ref->elem,
                                  "growing XInclude URL table");
+            xmlFreeDoc(doc);
             goto error;
         }
         ctxt->urlMax = newSize;
@@ -1631,14 +1633,15 @@ static int
 xmlXIncludeLoadTxt(xmlXIncludeCtxtPtr ctxt, const xmlChar *url,
                    xmlXIncludeRefPtr ref) {
     xmlParserInputBufferPtr buf;
-    xmlNodePtr node;
-    xmlURIPtr uri;
-    xmlChar *URL;
+    xmlNodePtr node = NULL;
+    xmlURIPtr uri = NULL;
+    xmlChar *URL = NULL;
     int i;
+    int ret = -1;
     xmlChar *encoding = NULL;
     xmlCharEncoding enc = (xmlCharEncoding) 0;
-    xmlParserCtxtPtr pctxt;
-    xmlParserInputPtr inputStream;
+    xmlParserCtxtPtr pctxt = NULL;
+    xmlParserInputPtr inputStream = NULL;
     int len;
     const xmlChar *content;
 
@@ -1654,21 +1657,19 @@ xmlXIncludeLoadTxt(xmlXIncludeCtxtPtr ctxt, const xmlChar *url,
     if (uri == NULL) {
 	xmlXIncludeErr(ctxt, ref->elem, XML_XINCLUDE_HREF_URI,
 	               "invalid value URI %s\n", url);
-	return(-1);
+	goto error;
     }
     if (uri->fragment != NULL) {
 	xmlXIncludeErr(ctxt, ref->elem, XML_XINCLUDE_TEXT_FRAGMENT,
 	               "fragment identifier forbidden for text: %s\n",
 		       (const xmlChar *) uri->fragment);
-	xmlFreeURI(uri);
-	return(-1);
+	goto error;
     }
     URL = xmlSaveUri(uri);
-    xmlFreeURI(uri);
     if (URL == NULL) {
 	xmlXIncludeErr(ctxt, ref->elem, XML_XINCLUDE_HREF_URI,
 	               "invalid value URI %s\n", url);
-	return(-1);
+	goto error;
     }
 
     /*
@@ -1678,8 +1679,7 @@ xmlXIncludeLoadTxt(xmlXIncludeCtxtPtr ctxt, const xmlChar *url,
     if (URL[0] == 0) {
 	xmlXIncludeErr(ctxt, ref->elem, XML_XINCLUDE_TEXT_DOCUMENT,
 		       "text serialization of document not available\n", NULL);
-	xmlFree(URL);
-	return(-1);
+	goto error;
     }
 
     /*
@@ -1709,11 +1709,8 @@ xmlXIncludeLoadTxt(xmlXIncludeCtxtPtr ctxt, const xmlChar *url,
 	if (enc == XML_CHAR_ENCODING_ERROR) {
 	    xmlXIncludeErr(ctxt, ref->elem, XML_XINCLUDE_UNKNOWN_ENCODING,
 			   "encoding %s not supported\n", encoding);
-	    xmlFree(encoding);
-	    xmlFree(URL);
-	    return(-1);
+	    goto error;
 	}
-	xmlFree(encoding);
     }
 
     /*
@@ -1721,27 +1718,18 @@ xmlXIncludeLoadTxt(xmlXIncludeCtxtPtr ctxt, const xmlChar *url,
      */
     pctxt = xmlNewParserCtxt();
     inputStream = xmlLoadExternalEntity((const char*)URL, NULL, pctxt);
-    if(inputStream == NULL) {
-	xmlFreeParserCtxt(pctxt);
-	xmlFree(URL);
-	return(-1);
-    }
+    if(inputStream == NULL)
+	goto error;
     buf = inputStream->buf;
-    if (buf == NULL) {
-	xmlFreeInputStream (inputStream);
-	xmlFreeParserCtxt(pctxt);
-	xmlFree(URL);
-	return(-1);
-    }
+    if (buf == NULL)
+	goto error;
     if (buf->encoder)
 	xmlCharEncCloseFunc(buf->encoder);
     buf->encoder = xmlGetCharEncodingHandler(enc);
     node = xmlNewDocText(ctxt->doc, NULL);
     if (node == NULL) {
-        xmlFreeInputStream(inputStream);
-        xmlFreeParserCtxt(pctxt);
-        xmlFree(URL);
-        return(-1);
+        xmlXIncludeErrMemory(ctxt, ref->elem, NULL);
+	goto error;
     }
 
     /*
@@ -1760,19 +1748,13 @@ xmlXIncludeLoadTxt(xmlXIncludeCtxtPtr ctxt, const xmlChar *url,
         if (!IS_CHAR(cur)) {
             xmlXIncludeErr(ctxt, ref->elem, XML_XINCLUDE_INVALID_CHAR,
                            "%s contains invalid char\n", URL);
-            xmlFreeNode(node);
-            xmlFreeInputStream(inputStream);
-            xmlFreeParserCtxt(pctxt);
-            xmlFree(URL);
-            return(-1);
+            goto error;
         }
 
         i += l;
     }
 
     xmlNodeAddContentLen(node, content, len);
-    xmlFreeParserCtxt(pctxt);
-    xmlFreeInputStream(inputStream);
 
     if (ctxt->txtNr >= ctxt->txtMax) {
         xmlXIncludeTxt *tmp;
@@ -1782,7 +1764,7 @@ xmlXIncludeLoadTxt(xmlXIncludeCtxtPtr ctxt, const xmlChar *url,
         if (tmp == NULL) {
             xmlXIncludeErrMemory(ctxt, ref->elem,
                                  "growing XInclude text table");
-            return(-1);
+	    goto error;
         }
         ctxt->txtMax = newSize;
         ctxt->txtTab = tmp;
@@ -1796,8 +1778,17 @@ loaded:
      * Add the element as the replacement copy.
      */
     ref->inc = node;
+    node = NULL;
+    ret = 0;
+
+error:
+    xmlFreeNode(node);
+    xmlFreeInputStream(inputStream);
+    xmlFreeParserCtxt(pctxt);
+    xmlFree(encoding);
+    xmlFreeURI(uri);
     xmlFree(URL);
-    return(0);
+    return(ret);
 }
 
 /**

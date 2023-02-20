@@ -4266,8 +4266,10 @@ xmlCopyPropList(xmlNodePtr target, xmlAttrPtr cur) {
         return(NULL);
     while (cur != NULL) {
         q = xmlCopyProp(target, cur);
-	if (q == NULL)
+	if (q == NULL) {
+            xmlFreePropList(ret);
 	    return(NULL);
+        }
 	if (p == NULL) {
 	    ret = p = q;
 	} else {
