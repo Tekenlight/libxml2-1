@@ -295,7 +295,7 @@ htmlNodeInfoPop(htmlParserCtxtPtr ctxt)
 
 #define SHRINK if ((ctxt->input->cur - ctxt->input->base > 2 * INPUT_CHUNK) && \
 		   (ctxt->input->end - ctxt->input->cur < 2 * INPUT_CHUNK)) \
-	xmlParserInputShrink(ctxt->input)
+	xmlParserShrink(ctxt)
 
 #define GROW if ((ctxt->progressive == 0) &&				\
 		 (ctxt->input->end - ctxt->input->cur < INPUT_CHUNK))	\
@@ -410,6 +410,11 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
 	*len = 0;
 	return(ctxt->token);
     }
+
+    if ((ctxt->input->end - ctxt->input->cur < 4) &&
+        (xmlParserGrow(ctxt) < 0))
+        return(0);
+
     if (ctxt->charset != XML_CHAR_ENCODING_UTF8) {
         xmlChar * guess;
         xmlCharEncodingHandlerPtr handler;
@@ -470,29 +475,21 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
     cur = ctxt->input->cur;
     c = *cur;
     if (c & 0x80) {
+        size_t avail;
+
         if ((c & 0x40) == 0)
             goto encoding_error;
-        if (cur[1] == 0) {
-            xmlParserGrow(ctxt);
-            cur = ctxt->input->cur;
-        }
-        if ((cur[1] & 0xc0) != 0x80)
+
+        avail = ctxt->input->end - ctxt->input->cur;
+
+        if ((avail < 2) || ((cur[1] & 0xc0) != 0x80))
             goto encoding_error;
         if ((c & 0xe0) == 0xe0) {
-
-            if (cur[2] == 0) {
-                xmlParserGrow(ctxt);
-                cur = ctxt->input->cur;
-            }
-            if ((cur[2] & 0xc0) != 0x80)
+            if ((avail < 3) || ((cur[2] & 0xc0) != 0x80))
                 goto encoding_error;
             if ((c & 0xf0) == 0xf0) {
-                if (cur[3] == 0) {
-                    xmlParserGrow(ctxt);
-                    cur = ctxt->input->cur;
-                }
                 if (((c & 0xf8) != 0xf0) ||
-                    ((cur[3] & 0xc0) != 0x80))
+                    (avail < 4) || ((cur[3] & 0xc0) != 0x80))
                     goto encoding_error;
                 /* 4-byte code */
                 *len = 4;
@@ -2670,7 +2667,6 @@ static const xmlChar *
 htmlParseNameComplex(xmlParserCtxtPtr ctxt) {
     int len = 0, l;
     int c;
-    int count = 0;
     int maxLength = (ctxt->options & XML_PARSE_HUGE) ?
                     XML_MAX_TEXT_LENGTH :
                     XML_MAX_NAME_LENGTH;
@@ -2679,7 +2675,6 @@ htmlParseNameComplex(xmlParserCtxtPtr ctxt) {
     /*
      * Handler for more complex cases
      */
-    GROW;
     c = CUR_CHAR(l);
     if ((c == ' ') || (c == '>') || (c == '/') || /* accelerators */
 	(!IS_LETTER(c) && (c != '_') &&
@@ -2693,10 +2688,6 @@ htmlParseNameComplex(xmlParserCtxtPtr ctxt) {
 	    (c == '_') || (c == ':') ||
 	    (IS_COMBINING(c)) ||
 	    (IS_EXTENDER(c)))) {
-	if (count++ > 100) {
-	    count = 0;
-	    GROW;
-	}
 	len += l;
         if (len > maxLength) {
             htmlParseErr(ctxt, XML_ERR_NAME_TOO_LONG, "name too long", NULL, NULL);
@@ -2712,6 +2703,8 @@ htmlParseNameComplex(xmlParserCtxtPtr ctxt) {
 	    return(htmlParseNameComplex(ctxt));
 	}
     }
+    if (ctxt->instate == XML_PARSER_EOF)
+        return(NULL);
 
     if (ctxt->input->cur - ctxt->input->base < len) {
         /* Sanity check */
@@ -2847,6 +2840,10 @@ htmlParseHTMLAttribute(htmlParserCtxtPtr ctxt, const xmlChar stop) {
 		out = &buffer[indx];
 	    }
 	    c = CUR_CHAR(l);
+            if (ctxt->instate == XML_PARSER_EOF) {
+                xmlFree(buffer);
+                return(NULL);
+            }
 	    if      (c <    0x80)
 		    { *out++  = c;                bits= -6; }
 	    else if (c <   0x800)
@@ -2859,7 +2856,7 @@ htmlParseHTMLAttribute(htmlParserCtxtPtr ctxt, const xmlChar stop) {
 	    for ( ; bits >= 0; bits-= 6) {
 		*out++  = ((c >> bits) & 0x3F) | 0x80;
 	    }
-	    NEXT;
+	    NEXTL(l);
 	}
         if (out - buffer > maxLength) {
             htmlParseErr(ctxt, XML_ERR_ATTRIBUTE_NOT_FINISHED,
@@ -3153,11 +3150,14 @@ htmlParseScript(htmlParserCtxtPtr ctxt) {
 		ctxt->sax->characters(ctxt->userData, buf, nbchar);
 	    }
 	    nbchar = 0;
+            SHRINK;
 	}
-	GROW;
 	NEXTL(l);
 	cur = CUR_CHAR(l);
     }
+
+    if (ctxt->instate == XML_PARSER_EOF)
+        return;
 
     if ((nbchar != 0) && (ctxt->sax != NULL) && (!ctxt->disableSAX)) {
         buf[nbchar] = 0;
@@ -3189,12 +3189,10 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
     xmlChar buf[HTML_PARSER_BIG_BUFFER_SIZE + 6];
     int nbchar = 0;
     int cur, l;
-    int chunk = 0;
 
     if (readahead)
         buf[nbchar++] = readahead;
 
-    SHRINK;
     cur = CUR_CHAR(l);
     while (((cur != '<') || (ctxt->token == '<')) &&
            ((cur != '&') || (ctxt->token == '&')) &&
@@ -3205,6 +3203,7 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
 	} else {
 	    COPY_BUF(l,buf,nbchar,cur);
 	}
+	NEXTL(l);
 	if (nbchar >= HTML_PARSER_BIG_BUFFER_SIZE) {
             buf[nbchar] = 0;
 
@@ -3228,21 +3227,12 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
 		}
 	    }
 	    nbchar = 0;
-	}
-	NEXTL(l);
-        chunk++;
-        if (chunk > HTML_PARSER_BUFFER_SIZE) {
-            chunk = 0;
             SHRINK;
-            GROW;
-        }
-	cur = CUR_CHAR(l);
-	if (cur == 0) {
-	    SHRINK;
-	    GROW;
-	    cur = CUR_CHAR(l);
 	}
+	cur = CUR_CHAR(l);
     }
+    if (ctxt->instate == XML_PARSER_EOF)
+        return;
     if (nbchar != 0) {
         buf[nbchar] = 0;
 
@@ -3265,12 +3255,6 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
 		    ctxt->sax->characters(ctxt->userData, buf, nbchar);
 	    }
 	}
-    } else {
-	/*
-	 * Loop detection
-	 */
-	if (cur == 0)
-	    ctxt->instate = XML_PARSER_EOF;
     }
 }
 
@@ -3366,7 +3350,6 @@ htmlParsePI(htmlParserCtxtPtr ctxt) {
                     XML_MAX_TEXT_LENGTH;
     const xmlChar *target;
     xmlParserInputState state;
-    int count = 0;
 
     if ((RAW == '<') && (NXT(1) == '?')) {
 	state = ctxt->instate;
@@ -3423,11 +3406,6 @@ htmlParsePI(htmlParserCtxtPtr ctxt) {
 		    }
 		    buf = tmp;
 		}
-		count++;
-		if (count > 50) {
-		    GROW;
-		    count = 0;
-		}
                 if (IS_CHAR(cur)) {
 		    COPY_BUF(l,buf,len,cur);
                 } else {
@@ -3444,13 +3422,12 @@ htmlParsePI(htmlParserCtxtPtr ctxt) {
                 }
 		NEXTL(l);
 		cur = CUR_CHAR(l);
-		if (cur == 0) {
-		    SHRINK;
-		    GROW;
-		    cur = CUR_CHAR(l);
-		}
 	    }
 	    buf[len] = 0;
+            if (ctxt->instate == XML_PARSER_EOF) {
+                xmlFree(buf);
+                return;
+            }
 	    if (cur != '>') {
 		htmlParseErr(ctxt, XML_ERR_PI_NOT_FINISHED,
 		      "ParsePI: PI %s never end ...\n", target, NULL);
@@ -3538,11 +3515,6 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
 	    (r != '-') || (q != '-'))) {
 	NEXTL(l);
 	next = CUR_CHAR(nl);
-	if (next == 0) {
-	    SHRINK;
-	    GROW;
-	    next = CUR_CHAR(nl);
-	}
 
 	if ((q == '-') && (r == '-') && (cur == '!') && (next == '>')) {
 	  htmlParseErr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
@@ -3587,6 +3559,10 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
     }
 finished:
     buf[len] = 0;
+    if (ctxt->instate == XML_PARSER_EOF) {
+        xmlFree(buf);
+        return;
+    }
     if (cur == '>') {
         NEXT;
 	if ((ctxt->sax != NULL) && (ctxt->sax->comment != NULL) &&
@@ -4500,7 +4476,9 @@ htmlParseContent(htmlParserCtxtPtr ctxt) {
         else {
             htmlParseCharData(ctxt);
         }
+
         GROW;
+        SHRINK;
     }
     if (currentNode != NULL) xmlFree(currentNode);
 }
@@ -4941,7 +4919,9 @@ htmlParseContentInternal(htmlParserCtxtPtr ctxt) {
         else {
             htmlParseCharData(ctxt);
         }
+
         GROW;
+        SHRINK;
     }
     if (currentNode != NULL) xmlFree(currentNode);
 }
@@ -6000,8 +5980,14 @@ htmlParseTryOrFinish(htmlParserCtxtPtr ctxt, int terminate) {
 			if (idx < 0)
 			    goto done;
 		        val = in->cur[idx + 2];
-			if (val == 0) /* bad cut of input */
+			if (val == 0) { /* bad cut of input */
+                            /*
+                             * FIXME: htmlParseScript checks for additional
+                             * characters after '</'.
+                             */
+                            ctxt->checkIndex = idx;
 			    goto done;
+                        }
 		    }
 		    htmlParseScript(ctxt);
 		    if ((cur == '<') && (next == '/')) {
