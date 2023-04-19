@@ -321,6 +321,9 @@ xmlParserGrow(xmlParserCtxtPtr ctxt) {
 
     if (buf == NULL)
         return(0);
+    /* Don't grow push parser buffer. */
+    if (ctxt->progressive)
+        return(0);
     /* Don't grow memory buffers. */
     if ((buf->encoder == NULL) && (buf->readcallback == NULL))
         return(0);
@@ -1174,12 +1177,20 @@ xmlSwitchInputEncoding(xmlParserCtxtPtr ctxt, xmlParserInputPtr input,
     }
 
     if (in->encoder != NULL) {
+        if (in->encoder == handler)
+            return (0);
+
         /*
-         * TODO: Detect encoding mismatch. We should start by comparing
-         * in->encoder->name and handler->name, but there are a few
-         * compatible encodings like UTF-16 and UCS-2 or UTF-32 and UCS-4.
+         * Switching encodings during parsing is a really bad idea,
+         * but WebKit/Chromium switches from ISO-8859-1 to UTF-16 as soon as
+         * it finds Unicode characters with code points larger than 255.
+         *
+         * TODO: We should check whether the "raw" input buffer is empty and
+         * convert the old content using the old encoder.
          */
-        xmlCharEncCloseFunc(handler);
+
+        xmlCharEncCloseFunc(in->encoder);
+        in->encoder = handler;
         return (0);
     }
 

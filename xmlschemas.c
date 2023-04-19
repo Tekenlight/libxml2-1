@@ -19399,7 +19399,7 @@ xmlSchemaFixupComplexType(xmlSchemaParserCtxtPtr pctxt,
 			"allowed to appear inside other model groups",
 			NULL, NULL);
 
-		} else if (! dummySequence) {
+		} else if ((!dummySequence) && (baseType->subtypes != NULL)) {
 		    xmlSchemaTreeItemPtr effectiveContent =
 			(xmlSchemaTreeItemPtr) type->subtypes;
 		    /*
