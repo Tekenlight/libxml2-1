@@ -1,1 +1,1 @@
-./test/schemas/any5_3.xml:4: element foo: Schemas validity error : Element '{urn:test:foo}foo': Missing child element(s).
+./test/schemas/any5_1.xsd:6: element complexType: Schemas parser error : local complex type: The content model is not determinist.

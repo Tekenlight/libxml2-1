@@ -1,1 +1,1 @@
-./test/schemas/any5_6.xml:11: element boo: Schemas validity error : Element '{urn:test:bar}boo': This element is not expected. Expected is ( {urn:test:foo}boo ).
+./test/schemas/any5_1.xsd:6: element complexType: Schemas parser error : local complex type: The content model is not determinist.
