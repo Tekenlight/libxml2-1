@@ -24,6 +24,7 @@ check_PROGRAMS = \
 	testchar \
 	testdict \
 	testlimits \
+	testparser \
 	testrecurse
 
 bin_PROGRAMS = xmllint xmlcatalog
@@ -95,9 +96,6 @@ endif
 endif
 if WITH_SCHEMATRON_SOURCES
 libxml2_la_SOURCES += schematron.c
-endif
-if WITH_TRIO_SOURCES
-libxml2_la_SOURCES += triostr.c trio.c
 endif
 if WITH_WRITER_SOURCES
 libxml2_la_SOURCES += xmlwriter.c
@@ -193,8 +191,8 @@ if WITH_XPTR_SOURCES
 libcxml2_la_SOURCES += xlink.c xpointer.c
 endif
 
-DEPS = $(top_builddir)/libxml2.la
-LDADDS = $(top_builddir)/libxml2.la
+DEPS = libxml2.la
+LDADDS = libxml2.la
 
 
 m4datadir = $(datadir)/aclocal
@@ -220,6 +218,10 @@ testchar_LDADD= $(LDADDS)
 testdict_SOURCES=testdict.c
 testdict_DEPENDENCIES = $(DEPS)
 testdict_LDADD= $(LDADDS)
+
+testparser_SOURCES=testparser.c
+testparser_DEPENDENCIES = $(DEPS)
+testparser_LDADD= $(LDADDS)
 
 runsuite_SOURCES=runsuite.c
 runsuite_DEPENDENCIES = $(DEPS)
@@ -262,10 +264,6 @@ runxmlconf_SOURCES=runxmlconf.c
 runxmlconf_DEPENDENCIES = $(DEPS)
 runxmlconf_LDADD= $(LDADDS)
 
-#testOOM_SOURCES=testOOM.c testOOMlib.h testOOMlib.c
-#testOOM_DEPENDENCIES = $(DEPS)
-#testOOM_LDADD= $(LDADDS)
-
 check-local:
 	[ -d test   ] || $(LN_S) $(srcdir)/test   .
 	[ -d result ] || $(LN_S) $(srcdir)/result .
@@ -274,6 +272,7 @@ check-local:
 	$(CHECKER) ./testapi$(EXEEXT)
 	$(CHECKER) ./testchar$(EXEEXT)
 	$(CHECKER) ./testdict$(EXEEXT)
+	$(CHECKER) ./testparser$(EXEEXT)
 	$(CHECKER) ./testModule$(EXEEXT)
 	$(CHECKER) ./testThreads$(EXEEXT)
 	$(CHECKER) ./runxmlconf$(EXEEXT)
@@ -454,7 +453,7 @@ cleanup:
 	-@(find . -name \*.orig -o -name \*.rej -o -name \*.old -exec rm -f {} \;)
 
 dist-hook: cleanup
-	(cd $(srcdir) ; tar -cf - --exclude .git win32 os400 vms test result) | (cd $(distdir); tar xf -)
+	(cd $(srcdir) ; tar -cf - --exclude .git win32 os400 test result) | (cd $(distdir); tar xf -)
 
 CLEANFILES = runsuite.log runxmlconf.log test.out *.gcda *.gcno *.res
 DISTCLEANFILES = COPYING missing.lst
@@ -464,8 +463,7 @@ EXTRA_DIST = Copyright check-xml-test-suite.py gentest.py \
 	     check-xsddata-test-suite.py check-xinclude-test-suite.py \
              example/Makefile.am example/gjobread.c example/gjobs.xml \
 	     libxml2-config.cmake.in autogen.sh \
-	     trionan.c trionan.h triostr.c triostr.h trio.c trio.h \
-	     triop.h triodef.h libxml.h \
+	     libxml.h \
 	     genUnicode.py \
 	     dbgen.pl dbgenattr.pl \
 	     libxml2.syms timsort.h \

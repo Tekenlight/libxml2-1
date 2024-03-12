@@ -44,6 +44,7 @@ static struct {
 
 size_t fuzzNumAllocs;
 size_t fuzzMaxAllocs;
+int fuzzAllocFailed;
 
 /**
  * xmlFuzzErrorFunc:
@@ -58,26 +59,24 @@ xmlFuzzErrorFunc(void *ctx ATTRIBUTE_UNUSED, const char *msg ATTRIBUTE_UNUSED,
 /*
  * Malloc failure injection.
  *
- * Quick tip to debug complicated issues: Increase MALLOC_OFFSET until
- * the crash disappears (or a different issue is triggered). Then set
- * the offset to the highest value that produces a crash and set
- * MALLOC_ABORT to 1 to see which failed memory allocation causes the
- * issue.
+ * To debug issues involving malloc failures, it's often helpful to set
+ * MALLOC_ABORT to 1. This should provide a backtrace of the failed
+ * allocation.
  */
 
-#define XML_FUZZ_MALLOC_OFFSET  0
 #define XML_FUZZ_MALLOC_ABORT   0
 
 static void *
 xmlFuzzMalloc(size_t size) {
     if (fuzzMaxAllocs > 0) {
-        if (fuzzNumAllocs >= fuzzMaxAllocs - 1)
+        fuzzNumAllocs += 1;
+        if (fuzzNumAllocs == fuzzMaxAllocs) {
 #if XML_FUZZ_MALLOC_ABORT
             abort();
-#else
-            return(NULL);
 #endif
-        fuzzNumAllocs += 1;
+            fuzzAllocFailed = 1;
+            return(NULL);
+        }
     }
     return malloc(size);
 }
@@ -85,13 +84,14 @@ xmlFuzzMalloc(size_t size) {
 static void *
 xmlFuzzRealloc(void *ptr, size_t size) {
     if (fuzzMaxAllocs > 0) {
-        if (fuzzNumAllocs >= fuzzMaxAllocs - 1)
+        fuzzNumAllocs += 1;
+        if (fuzzNumAllocs == fuzzMaxAllocs) {
 #if XML_FUZZ_MALLOC_ABORT
             abort();
-#else
-            return(NULL);
 #endif
-        fuzzNumAllocs += 1;
+            fuzzAllocFailed = 1;
+            return(NULL);
+        }
     }
     return realloc(ptr, size);
 }
@@ -104,7 +104,27 @@ xmlFuzzMemSetup(void) {
 void
 xmlFuzzMemSetLimit(size_t limit) {
     fuzzNumAllocs = 0;
-    fuzzMaxAllocs = limit ? limit + XML_FUZZ_MALLOC_OFFSET : 0;
+    fuzzMaxAllocs = limit;
+    fuzzAllocFailed = 0;
+}
+
+int
+xmlFuzzMallocFailed(void) {
+    return fuzzAllocFailed;
+}
+
+void
+xmlFuzzResetMallocFailed(void) {
+    fuzzAllocFailed = 0;
+}
+
+void
+xmlFuzzCheckMallocFailure(const char *func, int expect) {
+    if (fuzzAllocFailed != expect) {
+        fprintf(stderr, "%s: malloc failure %s reported\n",
+                func, fuzzAllocFailed ? "not" : "erroneously");
+        abort();
+    }
 }
 
 /**
@@ -284,16 +304,21 @@ xmlFuzzReadEntities(void) {
 
     while (1) {
         const char *url, *entity;
-        size_t entitySize;
+        size_t urlSize, entitySize;
         xmlFuzzEntityInfo *entityInfo;
 
-        url = xmlFuzzReadString(NULL);
+        url = xmlFuzzReadString(&urlSize);
         if (url == NULL) break;
 
         entity = xmlFuzzReadString(&entitySize);
         if (entity == NULL) break;
 
-        if (xmlHashLookup(fuzzData.entities, (xmlChar *)url) == NULL) {
+        /*
+         * Cap URL size to avoid quadratic behavior when generating
+         * error messages or looking up entities.
+         */
+        if (urlSize < 50 &&
+            xmlHashLookup(fuzzData.entities, (xmlChar *)url) == NULL) {
             entityInfo = xmlMalloc(sizeof(xmlFuzzEntityInfo));
             if (entityInfo == NULL)
                 break;
@@ -357,14 +382,20 @@ xmlFuzzEntityLoader(const char *URL, const char *ID ATTRIBUTE_UNUSED,
     if (input == NULL)
         return(NULL);
     input->filename = (char *) xmlCharStrdup(URL);
+    if (input->filename == NULL) {
+        xmlCtxtErrMemory(ctxt);
+        xmlFreeInputStream(input);
+        return(NULL);
+    }
     input->buf = xmlParserInputBufferCreateMem(entity->data, entity->size,
                                                XML_CHAR_ENCODING_NONE);
     if (input->buf == NULL) {
+        xmlCtxtErrMemory(ctxt);
         xmlFreeInputStream(input);
         return(NULL);
     }
     input->base = input->cur = xmlBufContent(input->buf->buffer);
-    input->end = input->base + entity->size;
+    input->end = input->base + xmlBufUse(input->buf->buffer);
 
     return input;
 }

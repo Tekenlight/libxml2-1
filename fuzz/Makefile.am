@@ -57,6 +57,8 @@ fuzz-xml: xml$(EXEEXT) seed/xml.stamp
 	    -dict=xml.dict \
 	    -max_len=$(XML_MAX_LEN) \
 	    -timeout=20 \
+	    -rss_limit_mb=4096 \
+	    -use_value_profile=1 \
 	    corpus/xml seed/xml
 
 # DTD validation fuzzer
@@ -75,6 +77,8 @@ fuzz-valid: valid$(EXEEXT) seed/valid.stamp
 	    -dict=xml.dict \
 	    -max_len=$(XML_MAX_LEN) \
 	    -timeout=20 \
+	    -rss_limit_mb=4096 \
+	    -use_value_profile=1 \
 	    corpus/valid seed/valid
 
 # XInclude fuzzer
@@ -95,6 +99,8 @@ fuzz-xinclude: xinclude$(EXEEXT) seed/xinclude.stamp
 	    -dict=xml.dict \
 	    -max_len=$(XML_MAX_LEN) \
 	    -timeout=20 \
+	    -rss_limit_mb=4096 \
+	    -use_value_profile=1 \
 	    corpus/xinclude seed/xinclude
 
 # HTML fuzzer
@@ -113,6 +119,8 @@ fuzz-html: html$(EXEEXT) seed/html.stamp
 	    -dict=html.dict \
 	    -max_len=1000000 \
 	    -timeout=10 \
+	    -rss_limit_mb=4096 \
+	    -use_value_profile=1 \
 	    corpus/html seed/html
 
 # Regexp fuzzer
@@ -131,6 +139,7 @@ fuzz-regexp: regexp$(EXEEXT) seed/regexp.stamp
 	    -dict=regexp.dict \
 	    -max_len=200 \
 	    -timeout=5 \
+	    -use_value_profile=1 \
 	    corpus/regexp seed/regexp
 
 # URI fuzzer
@@ -148,6 +157,7 @@ fuzz-uri: uri$(EXEEXT) seed/uri.stamp
 	./uri$(EXEEXT) \
 	    -max_len=10000 \
 	    -timeout=2 \
+	    -use_value_profile=1 \
 	    corpus/uri seed/uri
 
 # XML Schema fuzzer
@@ -166,6 +176,8 @@ fuzz-schema: schema$(EXEEXT) seed/schema.stamp
 	    -dict=schema.dict \
 	    -max_len=$(XML_MAX_LEN) \
 	    -timeout=20 \
+	    -rss_limit_mb=4096 \
+	    -use_value_profile=1 \
 	    corpus/schema seed/schema
 
 # XPath fuzzer
@@ -184,5 +196,7 @@ fuzz-xpath: xpath$(EXEEXT) seed/xpath.stamp
 	    -dict=xpath.dict \
 	    -max_len=10000 \
 	    -timeout=20 \
+	    -rss_limit_mb=4096 \
+	    -use_value_profile=1 \
 	    corpus/xpath seed/xpath
 

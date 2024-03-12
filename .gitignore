@@ -19,6 +19,7 @@
 /testchar
 /testdict
 /testlimits
+/testparser
 /testrecurse
 
 # Tests
@@ -152,15 +153,18 @@ xstc/xsts-*.tar.gz
 /autom4te.cache
 /compile
 /config.guess
+/config.guess~
 /config.h.in
 /config.h.in~
 /config.log
 /config.status
 /config.sub
+/config.sub~
 /configure
 /configure~
 /depcomp
 /install-sh
+/install-sh~
 /libtool
 /ltmain.sh
 /missing
