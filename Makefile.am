@@ -175,9 +175,6 @@ endif
 if WITH_SCHEMATRON_SOURCES
 libcxml2_la_SOURCES += schematron.c
 endif
-if WITH_TRIO_SOURCES
-libcxml2_la_SOURCES += triostr.c trio.c
-endif
 if WITH_WRITER_SOURCES
 libcxml2_la_SOURCES += xmlwriter.c
 endif
