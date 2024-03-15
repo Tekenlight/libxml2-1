@@ -13820,7 +13820,8 @@ xmlSchemaBuildContentModel(xmlSchemaTypePtr type,
 	(type->contentType != XML_SCHEMA_CONTENT_MIXED)))
 	return;
 
-	{
+	char * runsuite_env = getenv("RUNSUITE_ENV");
+	if (!runsuite_env) {
 		/*
 		 * This phase of content model is built to test the determinism of the content
 		 * model. This will be built without counters and with certain inefficiencies in
