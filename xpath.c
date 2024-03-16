@@ -49,6 +49,7 @@
 
 #include "private/buf.h"
 #include "private/error.h"
+#include "private/tree.h"
 #include "private/xpath.h"
 
 /* Disabled for now */
@@ -224,15 +225,6 @@ xmlXPathIsInf(double val) {
  *       the test should just be name[0] = ' '
  */
 
-static xmlNs xmlXPathXMLNamespaceStruct = {
-    NULL,
-    XML_NAMESPACE_DECL,
-    XML_XML_NAMESPACE,
-    BAD_CAST "xml",
-    NULL,
-    NULL
-};
-static xmlNsPtr xmlXPathXMLNamespace = &xmlXPathXMLNamespaceStruct;
 #ifndef LIBXML_THREAD_ENABLED
 /*
  * Optimizer is disabled only when threaded apps are detected while
@@ -4260,10 +4252,8 @@ xmlXPathNsLookup(xmlXPathContextPtr ctxt, const xmlChar *prefix) {
     if (prefix == NULL)
 	return(NULL);
 
-#ifdef XML_XML_NAMESPACE
     if (xmlStrEqual(prefix, (const xmlChar *) "xml"))
 	return(XML_XML_NAMESPACE);
-#endif
 
     if (ctxt->namespaces != NULL) {
 	int i;
@@ -7344,7 +7334,7 @@ xmlXPathNextNamespace(xmlXPathParserContextPtr ctxt, xmlNodePtr cur) {
                 ctxt->context->tmpNsNr++;
             }
         }
-	return((xmlNodePtr) xmlXPathXMLNamespace);
+	return((xmlNodePtr) xmlXmlNamespace);
     }
     if (ctxt->context->tmpNsNr > 0) {
 	return (xmlNodePtr)ctxt->context->tmpNsList[--ctxt->context->tmpNsNr];
@@ -8318,7 +8308,7 @@ xmlXPathTranslateFunction(xmlXPathParserContextPtr ctxt, int nargs) {
     if (ctxt->error != 0)
         goto error;
 
-    target = xmlBufCreate();
+    target = xmlBufCreateSize(64);
     if (target == NULL) {
         xmlXPathPErrMemory(ctxt);
         goto error;
@@ -13408,7 +13398,7 @@ xmlXPathEscapeUriFunction(xmlXPathParserContextPtr ctxt, int nargs) {
     CAST_TO_STRING;
     str = valuePop(ctxt);
 
-    target = xmlBufCreate();
+    target = xmlBufCreateSize(64);
 
     escape[0] = '%';
     escape[3] = 0;

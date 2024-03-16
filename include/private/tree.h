@@ -9,8 +9,11 @@
 XML_HIDDEN extern int
 __xmlRegisterCallbacks;
 
-XML_HIDDEN xmlNsPtr
-xmlTreeEnsureXMLDecl(xmlDocPtr doc);
+XML_HIDDEN extern xmlNsPtr
+xmlXmlNamespace;
+
+XML_HIDDEN int
+xmlNodeParseContent(xmlNodePtr node, const xmlChar *content, int len);
 XML_HIDDEN xmlNodePtr
 xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
                   int extended);
